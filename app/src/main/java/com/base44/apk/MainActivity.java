@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
         setContentView(rootLayout);
 
         webView.loadUrl(
-                "https://practical-pure-quran-path.base44.app"
+                "https://motherapp.base44.app"
         );
     }
 

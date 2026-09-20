@@ -24,7 +24,7 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new WebViewClient());
 
-        webView.loadUrl("https://YOUR-BASE44-APP.base44.app");
+        webView.loadUrl("https://practical-pure-quran-path.base44.app");
 
         setContentView(webView);
     }

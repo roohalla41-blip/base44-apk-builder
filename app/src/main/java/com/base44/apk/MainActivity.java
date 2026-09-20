@@ -4,8 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowInsets;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -14,78 +12,43 @@ import android.widget.FrameLayout;
 public class MainActivity extends Activity {
 
     private WebView webView;
-    private FrameLayout rootLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Window window = getWindow();
+        // نوار وضعیت و نوار پایین گوشی قابل مشاهده باشند
+        getWindow().setStatusBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(Color.WHITE);
 
-        // اجازه می‌دهد برنامه فضای نوارهای سیستمی گوشی را رعایت کند
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(true);
-
-            window.setStatusBarColor(Color.WHITE);
-            window.setNavigationBarColor(Color.WHITE);
-
-            window.getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR |
-                    View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             );
         }
 
-        rootLayout = new FrameLayout(this);
-        rootLayout.setBackgroundColor(Color.WHITE);
-
+        // ساخت WebView
         webView = new WebView(this);
 
         WebSettings settings = webView.getSettings();
 
-        // JavaScript برای اجرای کامل Base44
         settings.setJavaScriptEnabled(true);
-
-        // ذخیره اطلاعات سایت
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
 
-        // اجازه پخش رسانه
-        settings.setMediaPlaybackRequiresUserGesture(false);
-
-        // جلوگیری از زوم ناخواسته
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        // نمایش صحیح محتوا
-        settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(true);
+        // اجازه پخش صوت و ویدیو
+        settings.setMediaPlaybackRequiresUserGesture(false);
 
-        // لینک‌ها داخل همین WebView باز شوند
+        // لینک‌ها داخل خود برنامه باز شوند
         webView.setWebViewClient(new WebViewClient());
 
-        // فاصله امن برای نوار وضعیت و نوار ناوبری گوشی
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-
-            webView.setOnApplyWindowInsetsListener((view, insets) -> {
-
-                android.graphics.Insets systemBars =
-                        insets.getInsets(WindowInsets.Type.systemBars());
-
-                view.setPadding(
-                        0,
-                        systemBars.top,
-                        0,
-                        systemBars.bottom
-                );
-
-                return insets;
-            });
-
-        } else {
-
-            webView.setPadding(0, 0, 0, 0);
-        }
+        // WebView داخل صفحه اصلی
+        FrameLayout rootLayout = new FrameLayout(this);
+        rootLayout.setBackgroundColor(Color.WHITE);
 
         rootLayout.addView(
                 webView,
@@ -97,7 +60,7 @@ public class MainActivity extends Activity {
 
         setContentView(rootLayout);
 
-        // آدرس واقعی برنامه قرآن
+        // آدرس واقعی برنامه قرآن کریم
         webView.loadUrl(
                 "https://practical-pure-quran-path.base44.app"
         );

@@ -13,112 +13,114 @@ import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
 
-    private WebView webView;
-    private FrameLayout rootLayout;
+private static final String APP_URL =
+        "https://practical-pure-quran-path.base44.app/";
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+private WebView webView;
+private FrameLayout rootLayout;
 
-        Window window = getWindow();
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-        window.setStatusBarColor(Color.WHITE);
-        window.setNavigationBarColor(Color.WHITE);
+    Window window = getWindow();
 
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
-            window.getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            );
-        }
+    window.setStatusBarColor(Color.WHITE);
+    window.setNavigationBarColor(Color.WHITE);
 
-        rootLayout = new FrameLayout(this);
-        rootLayout.setBackgroundColor(Color.WHITE);
-
-        webView = new WebView(this);
-
-        WebSettings settings = webView.getSettings();
-
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-
-        settings.setSupportZoom(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-
-        settings.setMediaPlaybackRequiresUserGesture(false);
-
-        webView.setWebViewClient(new WebViewClient());
-
-        rootLayout.addView(
-                webView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        rootLayout.setOnApplyWindowInsetsListener((view, insets) -> {
-
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-
-                android.graphics.Insets systemBars =
-                        insets.getInsets(WindowInsets.Type.systemBars());
-
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) webView.getLayoutParams();
-
-                params.leftMargin = 0;
-                params.topMargin = systemBars.top;
-                params.rightMargin = 0;
-                params.bottomMargin = systemBars.bottom;
-
-                webView.setLayoutParams(params);
-
-            } else if (android.os.Build.VERSION.SDK_INT >= 23) {
-
-                int top = insets.getSystemWindowInsetTop();
-                int bottom = insets.getSystemWindowInsetBottom();
-
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) webView.getLayoutParams();
-
-                params.leftMargin = 0;
-                params.topMargin = top;
-                params.rightMargin = 0;
-                params.bottomMargin = bottom;
-
-                webView.setLayoutParams(params);
-            }
-
-            return insets;
-        });
-
-        setContentView(rootLayout);
-
-        webView.loadUrl(
-                "https://motherapp.base44.app"
+    if (android.os.Build.VERSION.SDK_INT >= 23) {
+        window.getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
         );
     }
 
-    @Override
-    public void onBackPressed() {
+    rootLayout = new FrameLayout(this);
+    rootLayout.setBackgroundColor(Color.WHITE);
 
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+    webView = new WebView(this);
+
+    WebSettings settings = webView.getSettings();
+
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setDatabaseEnabled(true);
+
+    settings.setSupportZoom(false);
+    settings.setBuiltInZoomControls(false);
+    settings.setDisplayZoomControls(false);
+
+    settings.setMediaPlaybackRequiresUserGesture(false);
+
+    webView.setWebViewClient(new WebViewClient());
+
+    rootLayout.addView(
+            webView,
+            new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            )
+    );
+
+    rootLayout.setOnApplyWindowInsetsListener((view, insets) -> {
+
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+
+            android.graphics.Insets systemBars =
+                    insets.getInsets(WindowInsets.Type.systemBars());
+
+            FrameLayout.LayoutParams params =
+                    (FrameLayout.LayoutParams) webView.getLayoutParams();
+
+            params.leftMargin = 0;
+            params.topMargin = systemBars.top;
+            params.rightMargin = 0;
+            params.bottomMargin = systemBars.bottom;
+
+            webView.setLayoutParams(params);
+
+        } else if (android.os.Build.VERSION.SDK_INT >= 23) {
+
+            int top = insets.getSystemWindowInsetTop();
+            int bottom = insets.getSystemWindowInsetBottom();
+
+            FrameLayout.LayoutParams params =
+                    (FrameLayout.LayoutParams) webView.getLayoutParams();
+
+            params.leftMargin = 0;
+            params.topMargin = top;
+            params.rightMargin = 0;
+            params.bottomMargin = bottom;
+
+            webView.setLayoutParams(params);
         }
+
+        return insets;
+    });
+
+    setContentView(rootLayout);
+
+    webView.loadUrl(APP_URL);
+}
+
+@Override
+public void onBackPressed() {
+
+    if (webView != null && webView.canGoBack()) {
+        webView.goBack();
+    } else {
+        super.onBackPressed();
+    }
+}
+
+@Override
+protected void onDestroy() {
+
+    if (webView != null) {
+        webView.stopLoading();
+        webView.destroy();
     }
 
-    @Override
-    protected void onDestroy() {
+    super.onDestroy();
+}
 
-        if (webView != null) {
-            webView.stopLoading();
-            webView.destroy();
-        }
-
-        super.onDestroy();
-    }
 }

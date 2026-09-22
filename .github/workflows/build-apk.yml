@@ -25,46 +25,50 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: دریافت آیکون برنامه
+      - name: بررسی و تنظیم آیکون برنامه
         run: |
+          if [ ! -f icon.png ]; then
+            echo "خطا: فایل icon.png در ریشه پروژه پیدا نشد."
+            exit 1
+          fi
+
           mkdir -p app/src/main/res/mipmap-mdpi
           mkdir -p app/src/main/res/mipmap-hdpi
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-          curl -L "https://practical-pure-quran-path.base44.app/icon.svg" \
-            -o /tmp/app_icon.svg
-
           sudo apt-get update
-          sudo apt-get install -y imagemagick librsvg2-bin
+          sudo apt-get install -y imagemagick
 
-          rsvg-convert -w 48 -h 48 /tmp/app_icon.svg \
-            -o app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon.png -resize 48x48 \
+            app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-          rsvg-convert -w 72 -h 72 /tmp/app_icon.svg \
-            -o app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert icon.png -resize 72x72 \
+            app/src/main/res/mipmap-hdpi/ic_launcher.png
 
-          rsvg-convert -w 96 -h 96 /tmp/app_icon.svg \
-            -o app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert icon.png -resize 96x96 \
+            app/src/main/res/mipmap-xhdpi/ic_launcher.png
 
-          rsvg-convert -w 144 -h 144 /tmp/app_icon.svg \
-            -o app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert icon.png -resize 144x144 \
+            app/src/main/res/mipmap-xxhdpi/ic_launcher.png
 
-          rsvg-convert -w 192 -h 192 /tmp/app_icon.svg \
-            -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert icon.png -resize 192x192 \
+            app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
       - name: تنظیم آیکون لانچر
         run: |
           if [ -f app/src/main/AndroidManifest.xml ]; then
             sed -i 's#android:icon="@[^"]*"#android:icon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
             sed -i 's#android:roundIcon="@[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
+          else
+            echo "هشدار: AndroidManifest.xml پیدا نشد."
           fi
 
       - name: ساخت APK
         run: gradle assembleDebug --stacktrace
 
-      - name: بررسی APK
+      - name: بررسی فایل APK
         run: |
           echo "APK files:"
           find . -type f -name "*.apk" -print

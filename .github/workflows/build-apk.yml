@@ -25,32 +25,46 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: دریافت و تبدیل آیکون برنامه
+      - name: دریافت آیکون برنامه
         run: |
-          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
 
           curl -L "https://practical-pure-quran-path.base44.app/icon.svg" \
             -o /tmp/app_icon.svg
 
           sudo apt-get update
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y imagemagick librsvg2-bin
 
-          convert /tmp/app_icon.svg \
-            -background none \
-            -resize 512x512 \
-            app/src/main/res/drawable/app_icon.png
+          rsvg-convert -w 48 -h 48 /tmp/app_icon.svg \
+            -o app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      - name: تنظیم آیکون APK
+          rsvg-convert -w 72 -h 72 /tmp/app_icon.svg \
+            -o app/src/main/res/mipmap-hdpi/ic_launcher.png
+
+          rsvg-convert -w 96 -h 96 /tmp/app_icon.svg \
+            -o app/src/main/res/mipmap-xhdpi/ic_launcher.png
+
+          rsvg-convert -w 144 -h 144 /tmp/app_icon.svg \
+            -o app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+
+          rsvg-convert -w 192 -h 192 /tmp/app_icon.svg \
+            -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+      - name: تنظیم آیکون لانچر
         run: |
           if [ -f app/src/main/AndroidManifest.xml ]; then
-            sed -i 's#android:icon="@[^"]*"#android:icon="@drawable/app_icon"#g' app/src/main/AndroidManifest.xml
-            sed -i 's#android:roundIcon="@[^"]*"#android:roundIcon="@drawable/app_icon"#g' app/src/main/AndroidManifest.xml
+            sed -i 's#android:icon="@[^"]*"#android:icon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
+            sed -i 's#android:roundIcon="@[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
           fi
 
       - name: ساخت APK
         run: gradle assembleDebug --stacktrace
 
-      - name: نمایش فایل‌های APK
+      - name: بررسی APK
         run: |
           echo "APK files:"
           find . -type f -name "*.apk" -print
@@ -58,6 +72,6 @@ jobs:
       - name: آپلود APK
         uses: actions/upload-artifact@v4
         with:
-          name: Base44-APK
+          name: Quran-Karim-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

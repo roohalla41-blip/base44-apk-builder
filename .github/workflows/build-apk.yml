@@ -25,6 +25,12 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: دریافت آیکون برنامه
+        run: |
+          mkdir -p app/src/main/res/drawable
+          curl -L "https://practical-pure-quran-path.base44.app/icon.svg" \
+            -o app/src/main/res/drawable/app_icon.svg
+
       - name: ساخت APK
         run: gradle assembleDebug --stacktrace
 

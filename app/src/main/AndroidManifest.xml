@@ -5,7 +5,7 @@
 
     <application
         android:theme="@style/AppTheme"
-        android:label="قرآن کریم"
+        android:label="حساب صراف"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

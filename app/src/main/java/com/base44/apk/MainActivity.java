@@ -14,7 +14,7 @@ import android.widget.FrameLayout;
 public class MainActivity extends Activity {
 
     private static final String APP_URL =
-            "https://practical-pure-quran-path.base44.app/";
+            "https://motherapp.base44.app/dashboard";
 
     private WebView webView;
     private FrameLayout rootLayout;

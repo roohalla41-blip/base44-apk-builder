@@ -25,6 +25,17 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: افزایش خودکار نسخه APK
+        run: |
+          VERSION_CODE=${GITHUB_RUN_NUMBER}
+          VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
+
+          sed -i "s/versionCode [0-9]*/versionCode ${VERSION_CODE}/" app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"${VERSION_NAME}\"/" app/build.gradle
+
+          echo "versionCode = ${VERSION_CODE}"
+          echo "versionName = ${VERSION_NAME}"
+
       - name: بررسی و تنظیم آیکون برنامه
         run: |
           if [ ! -f icon.png ]; then

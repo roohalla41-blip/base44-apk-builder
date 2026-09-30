@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowInsets;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -25,18 +24,22 @@ public class MainActivity extends Activity {
 
         Window window = getWindow();
 
+        // رنگ نوارهای سیستم
         window.setStatusBarColor(Color.WHITE);
         window.setNavigationBarColor(Color.WHITE);
 
+        // فقط برای Android 6 به بالا
         if (android.os.Build.VERSION.SDK_INT >= 23) {
             window.getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             );
         }
 
+        // ساخت صفحه اصلی
         rootLayout = new FrameLayout(this);
         rootLayout.setBackgroundColor(Color.WHITE);
 
+        // ساخت WebView
         webView = new WebView(this);
 
         WebSettings settings = webView.getSettings();
@@ -49,10 +52,21 @@ public class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        settings.setMediaPlaybackRequiresUserGesture(false);
+        // تنظیمات سازگاری WebView
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);
 
+        // پشتیبانی از محتوای ترکیبی در نسخه‌های جدید
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            settings.setMixedContentMode(
+                    WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+            );
+        }
+
+        // جلوگیری از باز شدن لینک‌ها در مرورگر خارجی
         webView.setWebViewClient(new WebViewClient());
 
+        // قرار دادن WebView در صفحه
         rootLayout.addView(
                 webView,
                 new FrameLayout.LayoutParams(
@@ -61,44 +75,9 @@ public class MainActivity extends Activity {
                 )
         );
 
-        rootLayout.setOnApplyWindowInsetsListener((view, insets) -> {
-
-            if (android.os.Build.VERSION.SDK_INT >= 30) {
-
-                android.graphics.Insets systemBars =
-                        insets.getInsets(WindowInsets.Type.systemBars());
-
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) webView.getLayoutParams();
-
-                params.leftMargin = 0;
-                params.topMargin = systemBars.top;
-                params.rightMargin = 0;
-                params.bottomMargin = systemBars.bottom;
-
-                webView.setLayoutParams(params);
-
-            } else if (android.os.Build.VERSION.SDK_INT >= 23) {
-
-                int top = insets.getSystemWindowInsetTop();
-                int bottom = insets.getSystemWindowInsetBottom();
-
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) webView.getLayoutParams();
-
-                params.leftMargin = 0;
-                params.topMargin = top;
-                params.rightMargin = 0;
-                params.bottomMargin = bottom;
-
-                webView.setLayoutParams(params);
-            }
-
-            return insets;
-        });
-
         setContentView(rootLayout);
 
+        // باز کردن برنامه
         webView.loadUrl(APP_URL);
     }
 
@@ -118,6 +97,7 @@ public class MainActivity extends Activity {
         if (webView != null) {
             webView.stopLoading();
             webView.destroy();
+            webView = null;
         }
 
         super.onDestroy();

@@ -2,18 +2,14 @@ package com.base44.apk;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.content.Intent;
-import android.net.Uri;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
+import android.webkit.CookieManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebResourceRequest;
 import android.widget.FrameLayout;
-
-import androidx.browser.customtabs.CustomTabsIntent;
 
 public class MainActivity extends Activity {
 
@@ -22,6 +18,15 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private FrameLayout rootLayout;
+
+    /*
+     * Chrome Mobile User-Agent
+     * برای آزمایش Google Sign-In داخل WebView
+     */
+    private static final String CHROME_UA =
+            "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
+            + "AppleWebKit/537.36 (KHTML, like Gecko) "
+            + "Chrome/124.0.0.0 Mobile Safari/537.36";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,41 +50,51 @@ public class MainActivity extends Activity {
 
         WebSettings settings = webView.getSettings();
 
+        // JavaScript
         settings.setJavaScriptEnabled(true);
+
+        // Base44 / React storage
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
 
+        // Cookies
+        CookieManager cookieManager =
+                CookieManager.getInstance();
+
+        cookieManager.setAcceptCookie(true);
+
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            cookieManager.setAcceptThirdPartyCookies(
+                    webView,
+                    true
+            );
+        }
+
+        // Chrome-like User-Agent
+        settings.setUserAgentString(CHROME_UA);
+
+        // Zoom
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
+        // Viewport
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
+        // HTTPS only
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(
-                    WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
             );
         }
 
-        webView.setWebViewClient(new WebViewClient() {
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    WebResourceRequest request
-            ) {
-                return handleUrl(request.getUrl());
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    String url
-            ) {
-                return handleUrl(Uri.parse(url));
-            }
-        });
+        /*
+         * مهم:
+         * هیچ URLای به Chrome یا Custom Tab فرستاده نمی‌شود.
+         * Google OAuth و callback هم داخل همین WebView می‌مانند.
+         */
+        webView.setWebViewClient(new WebViewClient());
 
         rootLayout.addView(
                 webView,
@@ -94,33 +109,6 @@ public class MainActivity extends Activity {
         webView.loadUrl(APP_URL);
     }
 
-    private boolean handleUrl(Uri uri) {
-
-        String url = uri.toString();
-
-        /*
-         * Google OAuth:
-         * فقط آدرس‌های Google را از WebView خارج می‌کنیم.
-         */
-        if (url.startsWith("https://accounts.google.com/")) {
-
-            CustomTabsIntent.Builder builder =
-                    new CustomTabsIntent.Builder();
-
-            CustomTabsIntent customTabsIntent =
-                    builder.build();
-
-            customTabsIntent.launchUrl(this, uri);
-
-            return true;
-        }
-
-        /*
-         * تمام صفحات عادی Base44 داخل WebView می‌مانند.
-         */
-        return false;
-    }
-
     @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
@@ -128,6 +116,13 @@ public class MainActivity extends Activity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        CookieManager.getInstance().flush();
     }
 
     @Override

@@ -2,13 +2,18 @@ package com.base44.apk;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.content.Intent;
+import android.net.Uri;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
 import android.widget.FrameLayout;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 public class MainActivity extends Activity {
 
@@ -57,7 +62,24 @@ public class MainActivity extends Activity {
             );
         }
 
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebViewClient(new WebViewClient() {
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    WebResourceRequest request
+            ) {
+                return handleUrl(request.getUrl());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    String url
+            ) {
+                return handleUrl(Uri.parse(url));
+            }
+        });
 
         rootLayout.addView(
                 webView,
@@ -70,6 +92,33 @@ public class MainActivity extends Activity {
         setContentView(rootLayout);
 
         webView.loadUrl(APP_URL);
+    }
+
+    private boolean handleUrl(Uri uri) {
+
+        String url = uri.toString();
+
+        /*
+         * Google OAuth:
+         * فقط آدرس‌های Google را از WebView خارج می‌کنیم.
+         */
+        if (url.startsWith("https://accounts.google.com/")) {
+
+            CustomTabsIntent.Builder builder =
+                    new CustomTabsIntent.Builder();
+
+            CustomTabsIntent customTabsIntent =
+                    builder.build();
+
+            customTabsIntent.launchUrl(this, uri);
+
+            return true;
+        }
+
+        /*
+         * تمام صفحات عادی Base44 داخل WebView می‌مانند.
+         */
+        return false;
     }
 
     @Override

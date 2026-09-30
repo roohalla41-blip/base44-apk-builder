@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
+import android.webkit.CookieManager;
+import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -24,49 +26,69 @@ public class MainActivity extends Activity {
 
         Window window = getWindow();
 
-        // رنگ نوارهای سیستم
+        // نوار وضعیت و نوار پایین
         window.setStatusBarColor(Color.WHITE);
         window.setNavigationBarColor(Color.WHITE);
 
-        // فقط برای Android 6 به بالا
+        // متن تیره روی نوار وضعیت
         if (android.os.Build.VERSION.SDK_INT >= 23) {
             window.getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
             );
         }
 
-        // ساخت صفحه اصلی
+        // صفحه اصلی
         rootLayout = new FrameLayout(this);
         rootLayout.setBackgroundColor(Color.WHITE);
 
-        // ساخت WebView
+        // WebView
         webView = new WebView(this);
 
         WebSettings settings = webView.getSettings();
 
+        // JavaScript
         settings.setJavaScriptEnabled(true);
+
+        // ذخیره اطلاعات سایت
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
 
+        // پشتیبانی از Popup و پنجره‌های OAuth
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(true);
+
+        // زوم
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        // تنظیمات سازگاری WebView
+        // سازگاری نمایش
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
-        // پشتیبانی از محتوای ترکیبی در نسخه‌های جدید
+        // پشتیبانی از Mixed Content
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(
                     WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
             );
         }
 
-        // جلوگیری از باز شدن لینک‌ها در مرورگر خارجی
+        // فعال کردن Cookie
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+
+        // Third-party Cookie برای OAuth
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
+
+        // WebView Client
         webView.setWebViewClient(new WebViewClient());
 
-        // قرار دادن WebView در صفحه
+        // پشتیبانی از JavaScript و Popup
+        webView.setWebChromeClient(new WebChromeClient());
+
+        // اضافه کردن WebView
         rootLayout.addView(
                 webView,
                 new FrameLayout.LayoutParams(
@@ -77,7 +99,7 @@ public class MainActivity extends Activity {
 
         setContentView(rootLayout);
 
-        // باز کردن برنامه
+        // باز کردن سایت
         webView.loadUrl(APP_URL);
     }
 

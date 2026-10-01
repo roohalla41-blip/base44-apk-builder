@@ -28,7 +28,7 @@ jobs:
 
       - name: آماده‌سازی keystore امضا
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 -d > app/release.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
@@ -36,10 +36,8 @@ jobs:
         run: |
           VERSION_CODE=${GITHUB_RUN_NUMBER}
           VERSION_NAME="1.0.${GITHUB_RUN_NUMBER}"
-
           sed -i "s/versionCode [0-9]*/versionCode ${VERSION_CODE}/" app/build.gradle
           sed -i "s/versionName \"[^\"]*\"/versionName \"${VERSION_NAME}\"/" app/build.gradle
-
           echo "versionCode = ${VERSION_CODE}"
           echo "versionName = ${VERSION_NAME}"
 
@@ -49,34 +47,27 @@ jobs:
             echo "خطا: فایل icon.png در ریشه پروژه پیدا نشد."
             exit 1
           fi
-
           sudo apt-get update
           sudo apt-get install -y imagemagick
-
           mkdir -p app/src/main/res/mipmap-mdpi
           mkdir -p app/src/main/res/mipmap-hdpi
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
-
           convert icon.png -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
           convert icon.png -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
           convert icon.png -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
           convert icon.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
           convert icon.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
           mkdir -p app/src/main/res/mipmap-anydpi-v26
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
-
           convert icon.png -resize 432x432 app/src/main/res/drawable/ic_launcher_foreground.png
-
           cat > app/src/main/res/values/icon_colors.xml <<'EOF'
           <resources>
               <color name="ic_launcher_background">#FFFFFF</color>
           </resources>
           EOF
-
           cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">

@@ -5,199 +5,199 @@ import android.os.Bundle;
 import android.content.Intent;
 import android.net.Uri;
 import android.graphics.Color;
-import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
-import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
 import android.widget.FrameLayout;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 
 public class MainActivity extends Activity {
 
-private static final String APP_URL =
-        "https://motherapp.base44.app/dashboard";
+    private static final String APP_URL =
+            "https://motherapp.base44.app/dashboard";
 
-private WebView webView;
+    private WebView webView;
+    private FrameLayout rootLayout;
 
-@Override
-protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+    private static final String CHROME_UA =
+            "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
+            + "AppleWebKit/537.36 (KHTML, like Gecko) "
+            + "Chrome/124.0.0.0 Mobile Safari/537.36";
 
-    requestWindowFeature(Window.FEATURE_NO_TITLE);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    getWindow().setStatusBarColor(Color.WHITE);
-    getWindow().setNavigationBarColor(Color.WHITE);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-    FrameLayout root = new FrameLayout(this);
+        getWindow().setStatusBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(Color.WHITE);
 
-    webView = new WebView(this);
-    root.addView(
-            webView,
-            new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-            )
-    );
+        rootLayout = new FrameLayout(this);
 
-    setContentView(root);
+        webView = new WebView(this);
 
-    configureWebView();
+        rootLayout.addView(
+                webView,
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                )
+        );
 
-    if (savedInstanceState == null) {
-        webView.loadUrl(APP_URL);
-    } else {
-        webView.restoreState(savedInstanceState);
-    }
-}
+        setContentView(rootLayout);
 
-private void configureWebView() {
+        WebSettings settings = webView.getSettings();
 
-    WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setDatabaseEnabled(true);
 
-    settings.setJavaScriptEnabled(true);
-    settings.setDomStorageEnabled(true);
-    settings.setDatabaseEnabled(true);
-    settings.setJavaScriptCanOpenWindowsAutomatically(true);
-    settings.setSupportMultipleWindows(false);
+        settings.setUserAgentString(CHROME_UA);
 
-    settings.setLoadWithOverviewMode(false);
-    settings.setUseWideViewPort(false);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
 
-    settings.setAllowFileAccess(true);
-    settings.setAllowContentAccess(true);
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);
 
-    CookieManager cookieManager = CookieManager.getInstance();
-    cookieManager.setAcceptCookie(true);
-    cookieManager.setAcceptThirdPartyCookies(webView, true);
+        CookieManager cookieManager =
+                CookieManager.getInstance();
 
-    webView.setBackgroundColor(Color.WHITE);
+        cookieManager.setAcceptCookie(true);
 
-    webView.setWebChromeClient(new WebChromeClient());
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            cookieManager.setAcceptThirdPartyCookies(
+                    webView,
+                    true
+            );
 
-    webView.setWebViewClient(new WebViewClient() {
-
-        @Override
-        public boolean shouldOverrideUrlLoading(
-                WebView view,
-                WebResourceRequest request
-        ) {
-            return handleUrl(request.getUrl().toString());
+            settings.setMixedContentMode(
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            );
         }
 
-        @Override
-        public boolean shouldOverrideUrlLoading(
-                WebView view,
-                String url
-        ) {
-            return handleUrl(url);
+        webView.setWebViewClient(new WebViewClient() {
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    WebResourceRequest request
+            ) {
+                return handleUrl(request.getUrl());
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    String url
+            ) {
+                return handleUrl(Uri.parse(url));
+            }
+        });
+
+        if (savedInstanceState == null) {
+            webView.loadUrl(APP_URL);
+        } else {
+            webView.restoreState(savedInstanceState);
         }
-    });
-}
-
-private boolean handleUrl(String url) {
-
-    if (url == null || url.isEmpty()) {
-        return false;
     }
 
-    Uri uri = Uri.parse(url);
-    String scheme = uri.getScheme();
+    private boolean handleUrl(Uri uri) {
 
-    if (scheme == null) {
-        return false;
-    }
+        if (uri == null) {
+            return false;
+        }
 
-    /*
-     * لینک‌های عادی خود برنامه باید داخل WebView باز شوند.
-     */
-    if (scheme.equals("http") || scheme.equals("https")) {
+        String url = uri.toString();
 
-        String host = uri.getHost();
+        /*
+         * Google OAuth
+         * Google باید خارج از WebView باز شود.
+         */
+        if (url.startsWith("https://accounts.google.com/")) {
 
-        if (host != null &&
-                (host.equals("motherapp.base44.app")
-                        || host.endsWith(".base44.app")
-                        || host.contains("supabase.co")
-                        || host.contains("google.com")
-                        || host.contains("accounts.google.com"))) {
+            CustomTabsIntent.Builder builder =
+                    new CustomTabsIntent.Builder();
 
-            webView.loadUrl(url);
+            CustomTabsIntent customTabsIntent =
+                    builder.build();
+
+            customTabsIntent.launchUrl(this, uri);
+
             return true;
         }
 
         /*
-         * سایر لینک‌های HTTPS را نیز فعلاً داخل WebView نگه می‌داریم
-         * تا فرآیند ورود Google از برنامه خارج نشود.
+         * لینک‌های معمولی داخل WebView می‌مانند.
          */
-        webView.loadUrl(url);
-        return true;
-    }
+        String scheme = uri.getScheme();
 
-    /*
-     * Deep Link / OAuth callback
-     */
-    if (scheme.equals("intent")
-            || scheme.equals("app")
-            || scheme.equals("base44")
-            || scheme.equals("com.base44.apk")) {
+        if ("http".equalsIgnoreCase(scheme)
+                || "https".equalsIgnoreCase(scheme)) {
 
+            return false;
+        }
+
+        /*
+         * لینک‌های خارجی مثل intent:// ، tel:// و mailto://
+         */
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            Intent intent =
+                    new Intent(Intent.ACTION_VIEW, uri);
+
             startActivity(intent);
+
         } catch (Exception ignored) {
         }
 
         return true;
     }
 
-    return false;
-}
+    @Override
+    public void onBackPressed() {
 
-@Override
-public void onBackPressed() {
-
-    if (webView != null && webView.canGoBack()) {
-        webView.goBack();
-    } else {
-        super.onBackPressed();
-    }
-}
-
-@Override
-protected void onSaveInstanceState(Bundle outState) {
-    if (webView != null) {
-        webView.saveState(outState);
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
-    super.onSaveInstanceState(outState);
-}
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
 
-@Override
-protected void onPause() {
-    super.onPause();
+        if (webView != null) {
+            webView.saveState(outState);
+        }
 
-    if (webView != null) {
-        CookieManager.getInstance().flush();
-    }
-}
-
-@Override
-protected void onDestroy() {
-
-    if (webView != null) {
-        webView.stopLoading();
-        webView.setWebChromeClient(null);
-        webView.setWebViewClient(null);
-        webView.destroy();
-        webView = null;
+        super.onSaveInstanceState(outState);
     }
 
-    super.onDestroy();
-}
+    @Override
+    protected void onPause() {
+        super.onPause();
 
+        if (webView != null) {
+            CookieManager.getInstance().flush();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        if (webView != null) {
+            webView.stopLoading();
+            webView.setWebViewClient(null);
+            webView.destroy();
+            webView = null;
+        }
+
+        super.onDestroy();
+    }
 }

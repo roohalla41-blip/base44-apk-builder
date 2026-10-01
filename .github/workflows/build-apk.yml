@@ -27,8 +27,7 @@ jobs:
           gradle-version: '8.7'
 
       - name: آماده‌سازی keystore امضا
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 -d > app/release.keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | tr -d '\n\r ' | base64 -d > app/release.keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
@@ -63,18 +62,8 @@ jobs:
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
           convert icon.png -resize 432x432 app/src/main/res/drawable/ic_launcher_foreground.png
-          cat > app/src/main/res/values/icon_colors.xml << 'EOF'
-          <resources>
-              <color name="ic_launcher_background">#FFFFFF</color>
-          </resources>
-          EOF
-          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_background" />
-              <foreground android:drawable="@drawable/ic_launcher_foreground" />
-          </adaptive-icon>
-          EOF
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><color name="ic_launcher_background">#FFFFFF</color></resources>' > app/src/main/res/values/icon_colors.xml
+          echo '<?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/ic_launcher_background" /><foreground android:drawable="@drawable/ic_launcher_foreground" /></adaptive-icon>' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 
       - name: تنظیم آیکون لانچر
         run: |
@@ -86,17 +75,14 @@ jobs:
           fi
 
       - name: ساخت APK امضاشده
-        run: |
-          gradle assembleRelease --stacktrace
+        run: gradle assembleRelease --stacktrace
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: بررسی فایل APK
-        run: |
-          echo "APK files:"
-          find . -type f -name "*.apk" -print
+        run: find . -type f -name "*.apk" -print
 
       - name: آپلود APK
         uses: actions/upload-artifact@v4

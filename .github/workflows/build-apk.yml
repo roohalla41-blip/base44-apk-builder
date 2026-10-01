@@ -1,3 +1,4 @@
+
 name: Build APK
 
 on:
@@ -25,6 +26,12 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: آماده‌سازی keystore امضا
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
       - name: افزایش خودکار نسخه APK
         run: |
           VERSION_CODE=${GITHUB_RUN_NUMBER}
@@ -46,46 +53,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
 
-          # پوشه‌های آیکون معمولی برای Android 5 تا 7
           mkdir -p app/src/main/res/mipmap-mdpi
           mkdir -p app/src/main/res/mipmap-hdpi
           mkdir -p app/src/main/res/mipmap-xhdpi
           mkdir -p app/src/main/res/mipmap-xxhdpi
           mkdir -p app/src/main/res/mipmap-xxxhdpi
 
-          # آیکون‌های استاندارد برای Android 5+
-          convert icon.png -resize 48x48 \
-            app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon.png -resize 48x48 app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert icon.png -resize 72x72 app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert icon.png -resize 96x96 app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert icon.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert icon.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
 
-          convert icon.png -resize 72x72 \
-            app/src/main/res/mipmap-hdpi/ic_launcher.png
-
-          convert icon.png -resize 96x96 \
-            app/src/main/res/mipmap-xhdpi/ic_launcher.png
-
-          convert icon.png -resize 144x144 \
-            app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-
-          convert icon.png -resize 192x192 \
-            app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-
-          # پوشه‌های Adaptive Icon برای Android 8+
           mkdir -p app/src/main/res/mipmap-anydpi-v26
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
 
-          # تصویر اصلی آیکون برای Adaptive Icon
-          convert icon.png -resize 432x432 \
-            app/src/main/res/drawable/ic_launcher_foreground.png
+          convert icon.png -resize 432x432 app/src/main/res/drawable/ic_launcher_foreground.png
 
-          # رنگ پس‌زمینه Adaptive Icon
           cat > app/src/main/res/values/icon_colors.xml <<'EOF'
           <resources>
               <color name="ic_launcher_background">#FFFFFF</color>
           </resources>
           EOF
 
-          # Adaptive Icon مخصوص Android 8+
           cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -97,18 +88,19 @@ jobs:
       - name: تنظیم آیکون لانچر
         run: |
           if [ -f app/src/main/AndroidManifest.xml ]; then
-            sed -i 's#android:icon="@[^"]*"#android:icon="@mipmap/ic_launcher"#g' \
-              app/src/main/AndroidManifest.xml
-
-            sed -i 's#android:roundIcon="@[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' \
-              app/src/main/AndroidManifest.xml
+            sed -i 's#android:icon="@[^"]*"#android:icon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
+            sed -i 's#android:roundIcon="@[^"]*"#android:roundIcon="@mipmap/ic_launcher"#g' app/src/main/AndroidManifest.xml
           else
             echo "هشدار: AndroidManifest.xml پیدا نشد."
           fi
 
-      - name: ساخت APK
+      - name: ساخت APK امضاشده
         run: |
-          gradle assembleDebug --stacktrace
+          gradle assembleRelease --stacktrace
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: بررسی فایل APK
         run: |
@@ -118,6 +110,6 @@ jobs:
       - name: آپلود APK
         uses: actions/upload-artifact@v4
         with:
-          name: Quran-Karim-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: TakKar-APK
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

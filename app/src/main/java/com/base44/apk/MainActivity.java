@@ -13,6 +13,8 @@ import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.widget.FrameLayout;
 
+import androidx.browser.customtabs.CustomTabsIntent;
+
 public class MainActivity extends Activity {
 
     private static final String APP_URL =
@@ -20,6 +22,8 @@ public class MainActivity extends Activity {
 
     private WebView webView;
     private FrameLayout rootLayout;
+
+    private boolean googleLoginStarted = false;
 
     private static final String CHROME_UA =
             "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
@@ -75,12 +79,6 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            settings.setMixedContentMode(
-                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            );
-        }
-
         CookieManager cookieManager =
                 CookieManager.getInstance();
 
@@ -90,6 +88,10 @@ public class MainActivity extends Activity {
             cookieManager.setAcceptThirdPartyCookies(
                     webView,
                     true
+            );
+
+            settings.setMixedContentMode(
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
             );
         }
 
@@ -119,20 +121,43 @@ public class MainActivity extends Activity {
             return false;
         }
 
-        String scheme = uri.getScheme();
+        String url = uri.toString();
 
-        if ("http".equalsIgnoreCase(scheme)
-                || "https".equalsIgnoreCase(scheme)) {
+        /*
+         * فقط شروع Google OAuth را به Custom Tab می‌فرستیم.
+         */
+        if (!googleLoginStarted
+                && url.startsWith("https://accounts.google.com/")) {
 
-            /*
-             * Google و Base44 و callback
-             * همگی داخل همین WebView می‌مانند.
-             */
+            googleLoginStarted = true;
+
+            CookieManager.getInstance().flush();
+
+            CustomTabsIntent.Builder builder =
+                    new CustomTabsIntent.Builder();
+
+            CustomTabsIntent customTabsIntent =
+                    builder.build();
+
+            customTabsIntent.launchUrl(this, uri);
+
+            return true;
+        }
+
+        /*
+         * وقتی OAuth شروع شده، دیگر هیچ URL وبی
+         * دوباره به Google فرستاده نمی‌شود.
+         *
+         * این قسمت جلوی حلقه Google → Google را می‌گیرد.
+         */
+        if ("http".equalsIgnoreCase(uri.getScheme())
+                || "https".equalsIgnoreCase(uri.getScheme())) {
+
             return false;
         }
 
         /*
-         * لینک‌های غیر وب مثل tel:// و mailto://
+         * لینک‌های خارجی مثل tel:// و mailto://
          */
         try {
             Intent intent =
@@ -144,6 +169,35 @@ public class MainActivity extends Activity {
         }
 
         return true;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        /*
+         * بعد از برگشت از Custom Tab،
+         * کوکی‌های WebView را تازه‌سازی می‌کنیم.
+         */
+        if (webView != null && googleLoginStarted) {
+
+            CookieManager.getInstance().flush();
+
+            webView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+
+                    if (webView != null) {
+
+                        webView.loadUrl(
+                                "https://motherapp.base44.app/dashboard"
+                        );
+                    }
+                }
+            }, 500);
+
+            googleLoginStarted = false;
+        }
     }
 
     @Override

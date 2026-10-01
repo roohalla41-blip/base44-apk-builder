@@ -13,8 +13,6 @@ import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.widget.FrameLayout;
 
-import androidx.browser.customtabs.CustomTabsIntent;
-
 public class MainActivity extends Activity {
 
     private static final String APP_URL =
@@ -51,6 +49,17 @@ public class MainActivity extends Activity {
 
         setContentView(rootLayout);
 
+        configureWebView();
+
+        if (savedInstanceState == null) {
+            webView.loadUrl(APP_URL);
+        } else {
+            webView.restoreState(savedInstanceState);
+        }
+    }
+
+    private void configureWebView() {
+
         WebSettings settings = webView.getSettings();
 
         settings.setJavaScriptEnabled(true);
@@ -66,6 +75,12 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            settings.setMixedContentMode(
+                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            );
+        }
+
         CookieManager cookieManager =
                 CookieManager.getInstance();
 
@@ -75,10 +90,6 @@ public class MainActivity extends Activity {
             cookieManager.setAcceptThirdPartyCookies(
                     webView,
                     true
-            );
-
-            settings.setMixedContentMode(
-                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
             );
         }
 
@@ -100,12 +111,6 @@ public class MainActivity extends Activity {
                 return handleUrl(Uri.parse(url));
             }
         });
-
-        if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
-        } else {
-            webView.restoreState(savedInstanceState);
-        }
     }
 
     private boolean handleUrl(Uri uri) {
@@ -114,38 +119,20 @@ public class MainActivity extends Activity {
             return false;
         }
 
-        String url = uri.toString();
-
-        /*
-         * Google OAuth
-         * Google باید خارج از WebView باز شود.
-         */
-        if (url.startsWith("https://accounts.google.com/")) {
-
-            CustomTabsIntent.Builder builder =
-                    new CustomTabsIntent.Builder();
-
-            CustomTabsIntent customTabsIntent =
-                    builder.build();
-
-            customTabsIntent.launchUrl(this, uri);
-
-            return true;
-        }
-
-        /*
-         * لینک‌های معمولی داخل WebView می‌مانند.
-         */
         String scheme = uri.getScheme();
 
         if ("http".equalsIgnoreCase(scheme)
                 || "https".equalsIgnoreCase(scheme)) {
 
+            /*
+             * Google و Base44 و callback
+             * همگی داخل همین WebView می‌مانند.
+             */
             return false;
         }
 
         /*
-         * لینک‌های خارجی مثل intent:// ، tel:// و mailto://
+         * لینک‌های غیر وب مثل tel:// و mailto://
          */
         try {
             Intent intent =

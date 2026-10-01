@@ -23,8 +23,6 @@ public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout rootLayout;
 
-    private boolean googleLoginStarted = false;
-
     private static final String CHROME_UA =
             "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -124,14 +122,11 @@ public class MainActivity extends Activity {
         String url = uri.toString();
 
         /*
-         * فقط شروع Google OAuth را به Custom Tab می‌فرستیم.
+         * Google OAuth
+         *
+         * تمام مراحل OAuth در Custom Tab انجام می‌شود.
          */
-        if (!googleLoginStarted
-                && url.startsWith("https://accounts.google.com/")) {
-
-            googleLoginStarted = true;
-
-            CookieManager.getInstance().flush();
+        if (url.startsWith("https://accounts.google.com/")) {
 
             CustomTabsIntent.Builder builder =
                     new CustomTabsIntent.Builder();
@@ -145,21 +140,22 @@ public class MainActivity extends Activity {
         }
 
         /*
-         * وقتی OAuth شروع شده، دیگر هیچ URL وبی
-         * دوباره به Google فرستاده نمی‌شود.
-         *
-         * این قسمت جلوی حلقه Google → Google را می‌گیرد.
+         * تمام لینک‌های HTTP و HTTPS
+         * داخل WebView باقی می‌مانند.
          */
-        if ("http".equalsIgnoreCase(uri.getScheme())
-                || "https".equalsIgnoreCase(uri.getScheme())) {
+        String scheme = uri.getScheme();
+
+        if ("http".equalsIgnoreCase(scheme)
+                || "https".equalsIgnoreCase(scheme)) {
 
             return false;
         }
 
         /*
-         * لینک‌های خارجی مثل tel:// و mailto://
+         * لینک‌های خارجی مانند tel:// و mailto://
          */
         try {
+
             Intent intent =
                     new Intent(Intent.ACTION_VIEW, uri);
 
@@ -169,35 +165,6 @@ public class MainActivity extends Activity {
         }
 
         return true;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        /*
-         * بعد از برگشت از Custom Tab،
-         * کوکی‌های WebView را تازه‌سازی می‌کنیم.
-         */
-        if (webView != null && googleLoginStarted) {
-
-            CookieManager.getInstance().flush();
-
-            webView.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-
-                    if (webView != null) {
-
-                        webView.loadUrl(
-                                "https://motherapp.base44.app/dashboard"
-                        );
-                    }
-                }
-            }, 500);
-
-            googleLoginStarted = false;
-        }
     }
 
     @Override

@@ -21,6 +21,14 @@ jobs:
             -keypass "TempPass123!" \
             -dname "CN=Hesab Sarraf, OU=Android, O=Hesab Sarraf, L=Unknown, ST=Unknown, C=AF"
 
+      - name: Show SHA-1 and SHA-256
+        run: |
+          keytool -list -v \
+            -keystore release-key.jks \
+            -alias hesab-sarraf \
+            -storepass "TempPass123!" \
+            | grep -E "SHA1:|SHA256:"
+
       - name: Convert keystore to Base64
         run: |
           base64 -w 0 release-key.jks > keystore_base64.txt

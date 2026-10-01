@@ -1,160 +1,86 @@
+
 package com.base44.apk;
 
-import android.app.Activity;
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.graphics.Color;
-import android.view.Window;
 import android.webkit.CookieManager;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebResourceRequest;
-import android.net.Uri;
-import android.widget.FrameLayout;
+import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends Activity {
-
-    private static final String APP_URL =
-            "https://motherapp.base44.app/dashboard";
+public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
 
-    private static final String CHROME_UA =
-            "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
-            + "AppleWebKit/537.36 (KHTML, like Gecko) "
-            + "Chrome/124.0.0.0 Mobile Safari/537.36";
+    private static final String APP_URL = "https://motherapp.base44.app/";
 
+    private static final String CHROME_UA =
+            "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36";
+
+    @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-        getWindow().setStatusBarColor(Color.WHITE);
-        getWindow().setNavigationBarColor(Color.WHITE);
-
-        FrameLayout root = new FrameLayout(this);
-
         webView = new WebView(this);
+        setContentView(webView);
 
-        root.addView(
-                webView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        setContentView(root);
-
-        configureWebView();
-
-        if (savedInstanceState == null) {
-            webView.loadUrl(APP_URL);
-        } else {
+        if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         }
-    }
 
-    private void configureWebView() {
+        WebSettings s = webView.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
 
-        WebSettings settings = webView.getSettings();
+        CookieManager cm = CookieManager.getInstance();
+        cm.setAcceptCookie(true);
+        cm.setAcceptThirdPartyCookies(webView, true);
 
-        // JavaScript
-        settings.setJavaScriptEnabled(true);
+        s.setUserAgentString(CHROME_UA);
 
-        // Storage
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
+        s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        s.setUseWideViewPort(true);
+        s.setLoadWithOverviewMode(true);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
 
-        // Chrome-like User Agent
-        settings.setUserAgentString(CHROME_UA);
-
-        // Display
-        settings.setSupportZoom(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-        settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(false);
-
-        // Cookies
-        CookieManager cookieManager =
-                CookieManager.getInstance();
-
-        cookieManager.setAcceptCookie(true);
-
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            cookieManager.setAcceptThirdPartyCookies(
-                    webView,
-                    true
-            );
-        }
-
-        /*
-         * تمام لینک‌ها داخل همین WebView باز می‌شوند.
-         * هیچ Google / Base44 URL به Chrome یا Custom Tab
-         * فرستاده نمی‌شود.
-         */
         webView.setWebViewClient(new WebViewClient() {
-
             @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    WebResourceRequest request
-            ) {
-                return false;
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    String url
-            ) {
-                return false;
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
+                view.loadUrl(req.getUrl().toString());
+                return true;
             }
         });
+
+        Intent intent = getIntent();
+        Uri intentUri = intent != null ? intent.getData() : null;
+        webView.loadUrl(intentUri != null ? intentUri.toString() : APP_URL);
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
-
-        if (webView != null) {
-            webView.saveState(outState);
-        }
-
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    protected void onPause() {
-
-        if (webView != null) {
-            CookieManager.getInstance().flush();
-        }
-
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-
-        if (webView != null) {
-            webView.stopLoading();
-            webView.setWebViewClient(null);
-            webView.destroy();
-            webView = null;
-        }
-
-        super.onDestroy();
-    }
-
-    @Override
+    @SuppressWarnings("deprecation")
     public void onBackPressed() {
-
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (webView != null) webView.saveState(outState);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CookieManager.getInstance().flush();
     }
 }

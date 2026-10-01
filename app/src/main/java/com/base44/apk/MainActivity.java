@@ -2,6 +2,8 @@ package com.base44.apk;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.content.Intent;
+import android.net.Uri;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
@@ -11,220 +13,191 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.content.Intent;
-import android.net.Uri;
 import android.widget.FrameLayout;
+
+import androidx.browser.customtabs.CustomTabsIntent;
 
 public class MainActivity extends Activity {
 
-    private static final String APP_URL =
-            "https://motherapp.base44.app/dashboard";
+private static final String APP_URL =
+        "https://motherapp.base44.app/dashboard";
 
-    private WebView webView;
-    private FrameLayout rootLayout;
+private WebView webView;
 
-    private static final String CHROME_UA =
-            "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
-            + "AppleWebKit/537.36 (KHTML, like Gecko) "
-            + "Chrome/124.0.0.0 Mobile Safari/537.36";
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        Window window = getWindow();
+    getWindow().setStatusBarColor(Color.WHITE);
+    getWindow().setNavigationBarColor(Color.WHITE);
 
-        window.setStatusBarColor(Color.WHITE);
-        window.setNavigationBarColor(Color.WHITE);
+    FrameLayout root = new FrameLayout(this);
 
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
-            window.getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-            );
-        }
+    webView = new WebView(this);
+    root.addView(
+            webView,
+            new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+            )
+    );
 
-        rootLayout = new FrameLayout(this);
-        rootLayout.setBackgroundColor(Color.WHITE);
+    setContentView(root);
 
-        webView = new WebView(this);
+    configureWebView();
 
-        WebSettings settings = webView.getSettings();
-
-        // JavaScript
-        settings.setJavaScriptEnabled(true);
-
-        // Storage
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-
-        // Cookies
-        CookieManager cookieManager =
-                CookieManager.getInstance();
-
-        cookieManager.setAcceptCookie(true);
-
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            cookieManager.setAcceptThirdPartyCookies(
-                    webView,
-                    true
-            );
-        }
-
-        // Chrome-like User-Agent
-        settings.setUserAgentString(CHROME_UA);
-
-        // View
-        settings.setSupportZoom(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setDisplayZoomControls(false);
-        settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(false);
-
-        // HTTPS
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            settings.setMixedContentMode(
-                    WebSettings.MIXED_CONTENT_NEVER_ALLOW
-            );
-        }
-
-        /*
-         * اجازه مدیریت پنجره‌ها و رفتارهای Web App
-         */
-        webView.setWebChromeClient(new WebChromeClient());
-
-        /*
-         * مدیریت لینک‌ها
-         */
-        webView.setWebViewClient(new WebViewClient() {
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    WebResourceRequest request
-            ) {
-                Uri uri = request.getUrl();
-
-                if (uri == null) {
-                    return false;
-                }
-
-                String scheme = uri.getScheme();
-
-                /*
-                 * لینک‌های معمولی HTTP/HTTPS
-                 * داخل WebView باقی می‌مانند.
-                 */
-                if ("http".equalsIgnoreCase(scheme)
-                        || "https".equalsIgnoreCase(scheme)) {
-
-                    return false;
-                }
-
-                /*
-                 * لینک‌های intent:// ، tel:// ، mailto://
-                 * و سایر Schemeهای خارجی
-                 */
-                try {
-                    Intent intent = new Intent(
-                            Intent.ACTION_VIEW,
-                            uri
-                    );
-
-                    startActivity(intent);
-                    return true;
-
-                } catch (Exception e) {
-                    return true;
-                }
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(
-                    WebView view,
-                    String url
-            ) {
-                if (url == null) {
-                    return false;
-                }
-
-                if (url.startsWith("http://")
-                        || url.startsWith("https://")) {
-
-                    return false;
-                }
-
-                try {
-                    Intent intent = new Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse(url)
-                    );
-
-                    startActivity(intent);
-                    return true;
-
-                } catch (Exception e) {
-                    return true;
-                }
-            }
-        });
-
-        rootLayout.addView(
-                webView,
-                new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT
-                )
-        );
-
-        setContentView(rootLayout);
-
+    if (savedInstanceState == null) {
         webView.loadUrl(APP_URL);
+    } else {
+        webView.restoreState(savedInstanceState);
+    }
+}
+
+private void configureWebView() {
+
+    WebSettings settings = webView.getSettings();
+
+    settings.setJavaScriptEnabled(true);
+    settings.setDomStorageEnabled(true);
+    settings.setDatabaseEnabled(true);
+    settings.setJavaScriptCanOpenWindowsAutomatically(true);
+    settings.setSupportMultipleWindows(false);
+
+    settings.setLoadWithOverviewMode(false);
+    settings.setUseWideViewPort(false);
+
+    settings.setAllowFileAccess(true);
+    settings.setAllowContentAccess(true);
+
+    CookieManager cookieManager = CookieManager.getInstance();
+    cookieManager.setAcceptCookie(true);
+    cookieManager.setAcceptThirdPartyCookies(webView, true);
+
+    webView.setBackgroundColor(Color.WHITE);
+
+    webView.setWebChromeClient(new WebChromeClient());
+
+    webView.setWebViewClient(new WebViewClient() {
+
+        @Override
+        public boolean shouldOverrideUrlLoading(
+                WebView view,
+                WebResourceRequest request
+        ) {
+            return handleUrl(request.getUrl().toString());
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(
+                WebView view,
+                String url
+        ) {
+            return handleUrl(url);
+        }
+    });
+}
+
+private boolean handleUrl(String url) {
+
+    if (url == null || url.isEmpty()) {
+        return false;
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+    Uri uri = Uri.parse(url);
+    String scheme = uri.getScheme();
+
+    if (scheme == null) {
+        return false;
+    }
+
+    /*
+     * لینک‌های عادی خود برنامه باید داخل WebView باز شوند.
+     */
+    if (scheme.equals("http") || scheme.equals("https")) {
+
+        String host = uri.getHost();
+
+        if (host != null &&
+                (host.equals("motherapp.base44.app")
+                        || host.endsWith(".base44.app")
+                        || host.contains("supabase.co")
+                        || host.contains("google.com")
+                        || host.contains("accounts.google.com"))) {
+
+            webView.loadUrl(url);
+            return true;
+        }
 
         /*
-         * بعد از برگشت از Google یا برنامه خارجی،
-         * وضعیت صفحه دوباره بررسی می‌شود.
+         * سایر لینک‌های HTTPS را نیز فعلاً داخل WebView نگه می‌داریم
+         * تا فرآیند ورود Google از برنامه خارج نشود.
          */
-        if (webView != null) {
-            webView.onResume();
-            webView.reload();
-        }
+        webView.loadUrl(url);
+        return true;
     }
 
-    @Override
-    public void onBackPressed() {
+    /*
+     * Deep Link / OAuth callback
+     */
+    if (scheme.equals("intent")
+            || scheme.equals("app")
+            || scheme.equals("base44")
+            || scheme.equals("com.base44.apk")) {
 
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            startActivity(intent);
+        } catch (Exception ignored) {
         }
+
+        return true;
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+    return false;
+}
 
-        if (webView != null) {
-            webView.onPause();
-        }
+@Override
+public void onBackPressed() {
 
+    if (webView != null && webView.canGoBack()) {
+        webView.goBack();
+    } else {
+        super.onBackPressed();
+    }
+}
+
+@Override
+protected void onSaveInstanceState(Bundle outState) {
+    if (webView != null) {
+        webView.saveState(outState);
+    }
+
+    super.onSaveInstanceState(outState);
+}
+
+@Override
+protected void onPause() {
+    super.onPause();
+
+    if (webView != null) {
         CookieManager.getInstance().flush();
     }
+}
 
-    @Override
-    protected void onDestroy() {
+@Override
+protected void onDestroy() {
 
-        if (webView != null) {
-            webView.stopLoading();
-            webView.destroy();
-            webView = null;
-        }
-
-        super.onDestroy();
+    if (webView != null) {
+        webView.stopLoading();
+        webView.setWebChromeClient(null);
+        webView.setWebViewClient(null);
+        webView.destroy();
+        webView = null;
     }
+
+    super.onDestroy();
+}
+
 }

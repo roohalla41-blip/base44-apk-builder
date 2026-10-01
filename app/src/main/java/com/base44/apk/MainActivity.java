@@ -10,7 +10,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import android.net.Uri;
-import android.content.Intent;
 import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
@@ -48,7 +47,7 @@ public class MainActivity extends Activity {
 
         setContentView(root);
 
-        setupWebView();
+        configureWebView();
 
         if (savedInstanceState == null) {
             webView.loadUrl(APP_URL);
@@ -57,35 +56,45 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void setupWebView() {
+    private void configureWebView() {
 
         WebSettings settings = webView.getSettings();
 
+        // JavaScript
         settings.setJavaScriptEnabled(true);
+
+        // Storage
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
 
+        // Chrome-like User Agent
         settings.setUserAgentString(CHROME_UA);
 
+        // Display
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
-        CookieManager cookies =
+        // Cookies
+        CookieManager cookieManager =
                 CookieManager.getInstance();
 
-        cookies.setAcceptCookie(true);
+        cookieManager.setAcceptCookie(true);
 
         if (android.os.Build.VERSION.SDK_INT >= 21) {
-            cookies.setAcceptThirdPartyCookies(
+            cookieManager.setAcceptThirdPartyCookies(
                     webView,
                     true
             );
         }
 
+        /*
+         * تمام لینک‌ها داخل همین WebView باز می‌شوند.
+         * هیچ Google / Base44 URL به Chrome یا Custom Tab
+         * فرستاده نمی‌شود.
+         */
         webView.setWebViewClient(new WebViewClient() {
 
             @Override
@@ -93,7 +102,7 @@ public class MainActivity extends Activity {
                     WebView view,
                     WebResourceRequest request
             ) {
-                return handleUrl(request.getUrl());
+                return false;
             }
 
             @Override
@@ -101,48 +110,9 @@ public class MainActivity extends Activity {
                     WebView view,
                     String url
             ) {
-                return handleUrl(Uri.parse(url));
-            }
-        });
-    }
-
-    private boolean handleUrl(Uri uri) {
-
-        if (uri == null) {
-            return false;
-        }
-
-        String url = uri.toString();
-
-        /*
-         * لینک‌های خود Base44 و برنامه داخل WebView
-         * باز می‌شوند.
-         */
-        if (url.startsWith("https://motherapp.base44.app/")
-                || url.startsWith("https://app.base44.com/")) {
-
-            return false;
-        }
-
-        /*
-         * لینک‌های Google را مستقیماً در WebView باز نمی‌کنیم.
-         * این قسمت عمداً فعلاً دست‌کاری نمی‌شود تا
-         * State مربوط به OAuth خراب نشود.
-         */
-        if (url.startsWith("https://accounts.google.com/")) {
-
-            Intent intent =
-                    new Intent(Intent.ACTION_VIEW, uri);
-
-            try {
-                startActivity(intent);
-                return true;
-            } catch (Exception ignored) {
                 return false;
             }
-        }
-
-        return false;
+        });
     }
 
     @Override

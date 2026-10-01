@@ -6,9 +6,13 @@ import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.content.Intent;
+import android.net.Uri;
 import android.widget.FrameLayout;
 
 public class MainActivity extends Activity {
@@ -19,10 +23,6 @@ public class MainActivity extends Activity {
     private WebView webView;
     private FrameLayout rootLayout;
 
-    /*
-     * Chrome Mobile User-Agent
-     * برای آزمایش Google Sign-In داخل WebView
-     */
     private static final String CHROME_UA =
             "Mozilla/5.0 (Linux; Android 13; Pixel 7) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
         // JavaScript
         settings.setJavaScriptEnabled(true);
 
-        // Base44 / React storage
+        // Storage
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
 
@@ -73,16 +73,14 @@ public class MainActivity extends Activity {
         // Chrome-like User-Agent
         settings.setUserAgentString(CHROME_UA);
 
-        // Zoom
+        // View
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
-
-        // Viewport
         settings.setLoadWithOverviewMode(false);
         settings.setUseWideViewPort(false);
 
-        // HTTPS only
+        // HTTPS
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             settings.setMixedContentMode(
                     WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -90,11 +88,85 @@ public class MainActivity extends Activity {
         }
 
         /*
-         * مهم:
-         * هیچ URLای به Chrome یا Custom Tab فرستاده نمی‌شود.
-         * Google OAuth و callback هم داخل همین WebView می‌مانند.
+         * اجازه مدیریت پنجره‌ها و رفتارهای Web App
          */
-        webView.setWebViewClient(new WebViewClient());
+        webView.setWebChromeClient(new WebChromeClient());
+
+        /*
+         * مدیریت لینک‌ها
+         */
+        webView.setWebViewClient(new WebViewClient() {
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    WebResourceRequest request
+            ) {
+                Uri uri = request.getUrl();
+
+                if (uri == null) {
+                    return false;
+                }
+
+                String scheme = uri.getScheme();
+
+                /*
+                 * لینک‌های معمولی HTTP/HTTPS
+                 * داخل WebView باقی می‌مانند.
+                 */
+                if ("http".equalsIgnoreCase(scheme)
+                        || "https".equalsIgnoreCase(scheme)) {
+
+                    return false;
+                }
+
+                /*
+                 * لینک‌های intent:// ، tel:// ، mailto://
+                 * و سایر Schemeهای خارجی
+                 */
+                try {
+                    Intent intent = new Intent(
+                            Intent.ACTION_VIEW,
+                            uri
+                    );
+
+                    startActivity(intent);
+                    return true;
+
+                } catch (Exception e) {
+                    return true;
+                }
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(
+                    WebView view,
+                    String url
+            ) {
+                if (url == null) {
+                    return false;
+                }
+
+                if (url.startsWith("http://")
+                        || url.startsWith("https://")) {
+
+                    return false;
+                }
+
+                try {
+                    Intent intent = new Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse(url)
+                    );
+
+                    startActivity(intent);
+                    return true;
+
+                } catch (Exception e) {
+                    return true;
+                }
+            }
+        });
 
         rootLayout.addView(
                 webView,
@@ -110,7 +182,22 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+
+        /*
+         * بعد از برگشت از Google یا برنامه خارجی،
+         * وضعیت صفحه دوباره بررسی می‌شود.
+         */
+        if (webView != null) {
+            webView.onResume();
+            webView.reload();
+        }
+    }
+
+    @Override
     public void onBackPressed() {
+
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
@@ -122,11 +209,16 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
 
+        if (webView != null) {
+            webView.onPause();
+        }
+
         CookieManager.getInstance().flush();
     }
 
     @Override
     protected void onDestroy() {
+
         if (webView != null) {
             webView.stopLoading();
             webView.destroy();
